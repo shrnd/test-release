@@ -32,6 +32,13 @@ cd "$REPO_ROOT"
 app_lc="$(tr '[:upper:]' '[:lower:]' <<<"$app")"
 version="$(sed -n 's/^ *MARKETING_VERSION: *//p' "Apps/$app/project.yml" | head -1 | tr -d '"')"
 
+# All preconditions before any mutation: a failure past the tag push would
+# strand a half-recorded ship.
+if [ -n "$(git status --porcelain)" ]; then
+    echo "error: working tree is dirty — commit first (shipping tags and bumps the version)" >&2
+    exit 1
+fi
+
 git fetch --quiet origin "refs/tags/$app_lc/*:refs/tags/$app_lc/*"
 
 if git rev-parse --quiet --verify "refs/tags/$app_lc/shipped/$version" >/dev/null; then
