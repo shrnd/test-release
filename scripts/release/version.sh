@@ -10,8 +10,26 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-app="${1:?usage: version.sh <App> major|minor|patch|<x.y.z>}"
+app_arg="${1:?usage: version.sh <App> major|minor|patch|<x.y.z>}"
 bump="${2:?usage: version.sh <App> major|minor|patch|<x.y.z>}"
+if [ "$#" -gt 2 ]; then
+    echo "unexpected argument: $3" >&2
+    exit 2
+fi
+
+app=""
+for dir in "$REPO_ROOT"/Apps/*/; do
+    if [ "$(basename "$dir")" = "$app_arg" ]; then
+        app="$app_arg"
+    fi
+done
+if [ -z "$app" ]; then
+    echo "error: no app named '$app_arg' under Apps/ (case-sensitive). Apps:" >&2
+    for dir in "$REPO_ROOT"/Apps/*/; do
+        echo "  $(basename "$dir")" >&2
+    done
+    exit 2
+fi
 cd "$REPO_ROOT"
 
 yml="Apps/$app/project.yml"

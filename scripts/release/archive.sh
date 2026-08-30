@@ -25,7 +25,13 @@ for arg in "$@"; do
         --no-tag) tag=0 ;;
         --allow-dirty) allow_dirty=1 ;;
         --*) echo "unknown option: $arg" >&2; exit 2 ;;
-        *) app_arg="$arg" ;;
+        *)
+            if [ -n "$app_arg" ]; then
+                echo "unexpected argument: $arg" >&2
+                exit 2
+            fi
+            app_arg="$arg"
+            ;;
     esac
 done
 allow_dirty="${allow_dirty:-0}"
@@ -36,13 +42,15 @@ fi
 
 app=""
 for dir in "$REPO_ROOT"/Apps/*/; do
-    name="$(basename "$dir")"
-    if [ "$(tr '[:upper:]' '[:lower:]' <<<"$name")" = "$(tr '[:upper:]' '[:lower:]' <<<"$app_arg")" ]; then
-        app="$name"
+    if [ "$(basename "$dir")" = "$app_arg" ]; then
+        app="$app_arg"
     fi
 done
 if [ -z "$app" ]; then
-    echo "error: no app named '$app_arg' under Apps/" >&2
+    echo "error: no app named '$app_arg' under Apps/ (case-sensitive). Apps:" >&2
+    for dir in "$REPO_ROOT"/Apps/*/; do
+        echo "  $(basename "$dir")" >&2
+    done
     exit 2
 fi
 

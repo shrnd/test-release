@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# Records that the current version went live on the App Store, then opens
-# the next release. Tags the archived build that shipped
+# Records that the current version went LIVE on the App Store, then opens
+# the next release. Run it on release day, NOT at submission: a submitted
+# build can still be rejected or pulled, and this record must never say
+# users have something they don't. The tag lands on the archived build's
+# commit, however far main has moved since — commits made while the
+# release sat in review simply belong to the next version.
+#
+# Tags the archived build that shipped
 # <app>/shipped/<version> (pushed), and — when run on main — immediately
 # bumps the minor so main always means "the next release". On a hotfix
 # branch it records the ship and leaves versions alone (merge back to main;
@@ -49,13 +55,15 @@ fi
 
 app=""
 for dir in "$REPO_ROOT"/Apps/*/; do
-    name="$(basename "$dir")"
-    if [ "$(tr '[:upper:]' '[:lower:]' <<<"$name")" = "$(tr '[:upper:]' '[:lower:]' <<<"$app_arg")" ]; then
-        app="$name"
+    if [ "$(basename "$dir")" = "$app_arg" ]; then
+        app="$app_arg"
     fi
 done
 if [ -z "$app" ]; then
-    echo "error: no app named '$app_arg' under Apps/" >&2
+    echo "error: no app named '$app_arg' under Apps/ (case-sensitive). Apps:" >&2
+    for dir in "$REPO_ROOT"/Apps/*/; do
+        echo "  $(basename "$dir")" >&2
+    done
     exit 2
 fi
 
