@@ -63,6 +63,16 @@ if [ -z "$build" ]; then
     exit 1
 fi
 
+# The build going live must contain everything already shipped — a release
+# archived before a hotfix merge would silently roll that fix back.
+build_commit="$(git rev-parse "$app_lc/$version-$build^{commit}")"
+for s in $(git tag --list "$app_lc/shipped/*"); do
+    if ! git merge-base --is-ancestor "$s" "$build_commit"; then
+        echo "error: $version ($build) does not contain shipped ${s#"$app_lc/shipped/"} — shipping it would roll that fix back. Archive a new build from a tree that includes it (merge the hotfix branch first)." >&2
+        exit 1
+    fi
+done
+
 shipped_tag="$app_lc/shipped/$version"
 git tag "$shipped_tag" "$app_lc/$version-$build^{}"
 git push --quiet origin "refs/tags/$shipped_tag"
