@@ -128,7 +128,11 @@ else
             [ "$w" = "$sv" ] && skipped=1
         done
         if [ "$skipped" -eq 1 ]; then
-            echo "WARNING: shipping $version ($build) WITHOUT shipped $sv — a deliberate regression."
+            if git merge-base --is-ancestor "$s" "$build_commit"; then
+                echo "note: --without $sv is unnecessary — $version ($build) contains it."
+            else
+                echo "WARNING: shipping $version ($build) WITHOUT shipped $sv — a deliberate regression."
+            fi
             continue
         fi
         if ! git merge-base --is-ancestor "$s" "$build_commit"; then
