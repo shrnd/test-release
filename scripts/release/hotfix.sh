@@ -50,6 +50,10 @@ branch="release/$app_lc/$maj.$min"
 if git rev-parse --quiet --verify "refs/heads/$branch" >/dev/null ||
    git rev-parse --quiet --verify "refs/remotes/origin/$branch" >/dev/null; then
     git switch --quiet "$branch"
+    # A second machine may have moved the branch; sync before deciding.
+    if git rev-parse --quiet --verify "refs/remotes/origin/$branch" >/dev/null; then
+        git merge --quiet --ff-only "origin/$branch"
+    fi
     branch_version="$(sed -n 's/^ *MARKETING_VERSION: *//p' "Apps/$app/project.yml" | head -1 | tr -d '"')"
     if [ "$branch_version" != "$shipped" ] &&
        [ "$(printf '%s\n%s\n' "$shipped" "$branch_version" | sort -V | tail -1)" = "$branch_version" ]; then
@@ -59,7 +63,8 @@ if git rev-parse --quiet --verify "refs/heads/$branch" >/dev/null ||
     echo "Resumed $branch at shipped $shipped."
 else
     git switch --quiet -c "$branch" "$app_lc/shipped/$shipped"
-    echo "Cut $branch from $app_lc/shipped/$shipped."
+    git push --quiet -u origin "$branch"
+    echo "Cut $branch from $app_lc/shipped/$shipped (pushed)."
 fi
 
 "$REPO_ROOT/scripts/release/version.sh" "$app" patch

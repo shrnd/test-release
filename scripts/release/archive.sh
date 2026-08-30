@@ -115,7 +115,11 @@ echo "$(date -u +%FT%TZ)  $app $marketing_version ($build_number)  [$git_state]"
 
 if [ "$tag" -eq 1 ]; then
     git tag "$tag_name" "$git_sha"
-    git push --quiet origin "refs/tags/$tag_name"
+    if ! git push --quiet origin "refs/tags/$tag_name"; then
+        git tag -d "$tag_name" >/dev/null
+        echo "error: pushing $tag_name failed — the build number may have been taken by a concurrent archive; re-run for the next number" >&2
+        exit 1
+    fi
 fi
 
 echo

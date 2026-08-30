@@ -30,6 +30,13 @@ case "$bump" in
     *) echo "error: unknown bump '$bump'" >&2; exit 2 ;;
 esac
 
+# Every downstream parser (tag globs, ${tag##*-}, sort -V) relies on plain
+# x.y.z — this is the only gate where versions enter the system.
+if ! [[ "$new" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "error: '$new' is not a plain x.y.z version" >&2
+    exit 2
+fi
+
 # Versions only move forward.
 if [ "$new" = "$cur" ] || [ "$(printf '%s\n%s\n' "$cur" "$new" | sort -V | tail -1)" != "$new" ]; then
     echo "error: $new is not ahead of $cur" >&2
@@ -44,4 +51,5 @@ fi
 sed -i '' "s/^\( *MARKETING_VERSION: *\).*/\1\"$new\"/" "$yml"
 git add "$yml"
 git commit -q -m "$app $new opened"
-echo "$app: $cur -> $new (committed)"
+git push --quiet origin HEAD
+echo "$app: $cur -> $new (committed, pushed)"
